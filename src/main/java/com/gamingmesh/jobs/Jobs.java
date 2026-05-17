@@ -1384,6 +1384,7 @@ public final class Jobs extends JavaPlugin {
 					getLoging().recordToLog(jPlayer, info, amounts);
 				}
 
+				prog.setLastMoney(prog.getLastMoney() + income);
 				if (prog.addExperience(expAmount))
 					getPlayerManager().performLevelUp(jPlayer, prog.getJob(), oldLevel);
 			}
@@ -1489,6 +1490,7 @@ public final class Jobs extends JavaPlugin {
 			getLoging().recordToLog(jPlayer, info, payment.getPayment());
 		}
 
+		prog.setLastMoney(prog.getLastMoney() + payment.get(CurrencyType.MONEY));
 		if (prog.addExperience(expPayment))
 			getPlayerManager().performLevelUp(jPlayer, prog.getJob(), oldLevel);
 	}
