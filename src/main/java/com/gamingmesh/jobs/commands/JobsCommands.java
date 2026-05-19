@@ -32,11 +32,13 @@ import com.gamingmesh.jobs.container.JobProgression;
 import com.gamingmesh.jobs.container.JobsPlayer;
 import com.gamingmesh.jobs.container.Title;
 import com.gamingmesh.jobs.i18n.Language;
+// CMILib Start
 import com.gamingmesh.jobs.stuff.TabComplete;
 import com.gamingmesh.jobs.stuff.Util;
 
 import net.Zrips.CMILib.ActionBar.CMIActionBar;
 import net.Zrips.CMILib.Colors.CMIChatColor;
+// CMILib End
 import net.Zrips.CMILib.Container.CMIArray;
 import net.Zrips.CMILib.Container.PageInfo;
 import net.Zrips.CMILib.Locale.LC;
@@ -73,38 +75,40 @@ public class JobsCommands implements CommandExecutor {
             return;
         }
 
-        PluginCommand legacy = plugin.getCommand("jobs");
-        String label = getMainLabel();
-        String namespace = Jobs.getGCManager().getMainCommandNamespace();
-        if (namespace == null || namespace.isEmpty())
-            namespace = "jobs";
-
-        PluginCommand command = createPluginCommand(label);
+        PluginCommand command = plugin.getCommand("jobs");
         if (command == null) {
-            Jobs.getPluginLogger().warning("Failed to create Jobs command for label '" + label + "'.");
-            if (legacy != null) {
-                configureCommand(legacy);
-                registeredMainCommand = legacy;
-            }
+            Jobs.getPluginLogger().severe("Could not find command 'jobs' in plugin.yml. Cannot apply custom command configuration.");
             return;
         }
 
-        if (registeredMainCommand != null) {
-            unregisterCommand(commandMap, registeredMainCommand);
-            registeredMainCommand = null;
+        String newLabel = getMainLabel();
+        String newNamespace = Jobs.getGCManager().getMainCommandNamespace();
+
+        // 1. Unregister the command completely from its current state
+        unregisterCommand(commandMap, command);
+
+        // 2. Modify the command object's properties for the new label if it has changed
+        if (!newLabel.equalsIgnoreCase(command.getLabel())) {
+            try {
+                Field nameField = Command.class.getDeclaredField("name");
+                nameField.setAccessible(true);
+                nameField.set(command, newLabel);
+                // Also update the label, which is what is displayed in help, etc.
+                command.setLabel(newLabel);
+            } catch (Exception e) {
+                Jobs.getPluginLogger().severe("Error modifying command label via reflection: " + e.getMessage() + ". Command will keep label '" + command.getLabel() + "'.");
+            }
         }
 
-        if (legacy != null && legacy != registeredMainCommand) {
-            unregisterCommand(commandMap, legacy);
-        }
-
+        // 3. Re-configure aliases, description, executor, etc.
         configureCommand(command);
-        boolean registered = commandMap.register(namespace, command);
-        registeredMainCommand = command;
 
-        if (!registered) {
-            Jobs.getPluginLogger().warning("Command '/" + label + "' is already registered. Jobs will be available as '/" + namespace + ":" + label + "'.");
+        // 4. Re-register with the (potentially new) label and namespace
+        if (!commandMap.register(newNamespace, command)) {
+            Jobs.getPluginLogger().warning("Command '/" + command.getLabel() + "' is already registered. Jobs will be available as '/" + newNamespace + ":" + command.getLabel() + "'.");
         }
+
+        this.registeredMainCommand = command;
     }
 
     public Set<String> getCommandsWithAliases(CommandSender sender) {
@@ -167,10 +171,6 @@ public class JobsCommands implements CommandExecutor {
     private void unregisterCommand(CommandMap commandMap, Command command) {
         if (commandMap == null || command == null)
             return;
-        try {
-            command.unregister(commandMap);
-        } catch (Exception ignored) {
-        }
         removeKnownCommands(commandMap, command);
     }
 
