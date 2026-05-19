@@ -28,7 +28,7 @@ public final class TabComplete implements TabCompleter {
         List<String> completionList = new ArrayList<>();
 
         if (args.length == 1) {
-            StringUtil.copyPartialMatches(args[0], Jobs.getCommandManager().getCommands(sender), completionList);
+            StringUtil.copyPartialMatches(args[0], Jobs.getCommandManager().getCommandsWithAliases(sender), completionList);
         } else if (args.length > 1) {
             String first = args[0].toLowerCase();
 

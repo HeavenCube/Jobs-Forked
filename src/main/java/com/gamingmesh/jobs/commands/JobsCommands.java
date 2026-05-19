@@ -1,16 +1,24 @@
 package com.gamingmesh.jobs.commands;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandMap;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.PluginCommand;
+import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 
 import com.gamingmesh.jobs.Jobs;
 import com.gamingmesh.jobs.commands.list.info;
@@ -24,6 +32,7 @@ import com.gamingmesh.jobs.container.JobProgression;
 import com.gamingmesh.jobs.container.JobsPlayer;
 import com.gamingmesh.jobs.container.Title;
 import com.gamingmesh.jobs.i18n.Language;
+import com.gamingmesh.jobs.stuff.TabComplete;
 import com.gamingmesh.jobs.stuff.Util;
 
 import net.Zrips.CMILib.ActionBar.CMIActionBar;
@@ -36,11 +45,11 @@ import net.Zrips.CMILib.RawMessages.RawMessage;
 
 public class JobsCommands implements CommandExecutor {
 
-    public static final String LABEL = "jobs";
-
     private static final String PACKAGEPATH = "com.gamingmesh.jobs.commands.list";
 
     private final Set<String> commandList = new TreeSet<>();
+
+    private PluginCommand registeredMainCommand;
 
     protected Jobs plugin;
 
@@ -50,6 +59,133 @@ public class JobsCommands implements CommandExecutor {
 
     public Set<String> getCommands() {
         return commandList;
+    }
+
+    public void registerMainCommand() {
+        CommandMap commandMap = getCommandMap();
+        if (commandMap == null) {
+            Jobs.getPluginLogger().warning("Could not access command map, falling back to plugin.yml command registration.");
+            PluginCommand fallback = plugin.getCommand("jobs");
+            if (fallback != null) {
+                configureCommand(fallback);
+                registeredMainCommand = fallback;
+            }
+            return;
+        }
+
+        PluginCommand legacy = plugin.getCommand("jobs");
+        String label = getMainLabel();
+        String namespace = Jobs.getGCManager().getMainCommandNamespace();
+        if (namespace == null || namespace.isEmpty())
+            namespace = "jobs";
+
+        PluginCommand command = createPluginCommand(label);
+        if (command == null) {
+            Jobs.getPluginLogger().warning("Failed to create Jobs command for label '" + label + "'.");
+            if (legacy != null) {
+                configureCommand(legacy);
+                registeredMainCommand = legacy;
+            }
+            return;
+        }
+
+        if (registeredMainCommand != null) {
+            unregisterCommand(commandMap, registeredMainCommand);
+            registeredMainCommand = null;
+        }
+
+        if (legacy != null && legacy != registeredMainCommand) {
+            unregisterCommand(commandMap, legacy);
+        }
+
+        configureCommand(command);
+        boolean registered = commandMap.register(namespace, command);
+        registeredMainCommand = command;
+
+        if (!registered) {
+            Jobs.getPluginLogger().warning("Command '/" + label + "' is already registered. Jobs will be available as '/" + namespace + ":" + label + "'.");
+        }
+    }
+
+    public Set<String> getCommandsWithAliases(CommandSender sender) {
+        Set<String> commands = getCommands(sender);
+        if (commands.isEmpty())
+            return commands;
+
+        for (Map.Entry<String, String> entry : Jobs.getGCManager().getSubCommandAliases().entrySet()) {
+            if (commands.contains(entry.getValue()))
+                commands.add(entry.getKey());
+        }
+
+        return commands;
+    }
+
+    private static String getMainLabel() {
+        String label = Jobs.getGCManager().getMainCommandLabel();
+        return label == null || label.isEmpty() ? "jobs" : label;
+    }
+
+    private void configureCommand(PluginCommand command) {
+        if (command == null)
+            return;
+        command.setExecutor(this);
+        command.setTabCompleter(new TabComplete());
+        command.setAliases(Jobs.getGCManager().getMainCommandAliases());
+        String description = plugin.getDescription().getDescription();
+        if (description != null && !description.isEmpty())
+            command.setDescription(description);
+    }
+
+    private CommandMap getCommandMap() {
+        try {
+            Method getCommandMap = Bukkit.getServer().getClass().getMethod("getCommandMap");
+            return (CommandMap) getCommandMap.invoke(Bukkit.getServer());
+        } catch (Exception ignored) {
+        }
+
+        try {
+            Field commandMapField = Bukkit.getServer().getClass().getDeclaredField("commandMap");
+            commandMapField.setAccessible(true);
+            return (CommandMap) commandMapField.get(Bukkit.getServer());
+        } catch (Exception ignored) {
+        }
+
+        return null;
+    }
+
+    private PluginCommand createPluginCommand(String label) {
+        try {
+            Constructor<PluginCommand> constructor = PluginCommand.class.getDeclaredConstructor(String.class, Plugin.class);
+            constructor.setAccessible(true);
+            return constructor.newInstance(label, plugin);
+        } catch (Exception ignored) {
+        }
+
+        return null;
+    }
+
+    private void unregisterCommand(CommandMap commandMap, Command command) {
+        if (commandMap == null || command == null)
+            return;
+        try {
+            command.unregister(commandMap);
+        } catch (Exception ignored) {
+        }
+        removeKnownCommands(commandMap, command);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void removeKnownCommands(CommandMap commandMap, Command command) {
+        if (!(commandMap instanceof SimpleCommandMap))
+            return;
+
+        try {
+            Field knownCommandsField = SimpleCommandMap.class.getDeclaredField("knownCommands");
+            knownCommandsField.setAccessible(true);
+            Map<String, Command> knownCommands = (Map<String, Command>) knownCommandsField.get(commandMap);
+            knownCommands.entrySet().removeIf(entry -> entry.getValue() == command);
+        } catch (Exception ignored) {
+        }
     }
 
     @Override
@@ -95,6 +231,11 @@ public class JobsCommands implements CommandExecutor {
 
         String cmd = args[0].toLowerCase();
         Cmd cmdClass = getCmdClass(cmd);
+        String resolved = Jobs.getGCManager().resolveSubCommandAlias(cmd);
+        if (resolved != null && !resolved.equals(cmd) && cmdClass == null) {
+            cmd = resolved;
+            cmdClass = getCmdClass(cmd);
+        }
         if (cmdClass == null) {
             CMIMessages.sendMessage(sender, LC.info_NoCommand);
             return true;
@@ -132,7 +273,7 @@ public class JobsCommands implements CommandExecutor {
     }
 
     private static String getUsage(String cmd) {
-        String cmdString = Jobs.getLanguage().getMessage("command.help.output.cmdFormat", "[command]", Jobs.getLanguage().getMessage("command.help.output.label") + " " + cmd);
+        String cmdString = Jobs.getLanguage().getMessage("command.help.output.cmdFormat", "[command]", getMainLabel() + " " + cmd);
         String msg = Jobs.getLanguage().getMessage("command." + cmd + ".help.args");
 
         cmdString = cmdString.replace("[arguments]", !msg.isEmpty() ? msg : "");
@@ -178,7 +319,7 @@ public class JobsCommands implements CommandExecutor {
             if (pl) {
                 rm.addText("\n" + getUsage(one));
                 rm.addHover(Jobs.getLanguage().getMessage("command." + one + ".help.info"));
-                rm.addSuggestion("/" + Jobs.getLanguage().getMessage("command.help.output.label").toLowerCase() + " " + one + " ");
+                rm.addSuggestion("/" + getMainLabel().toLowerCase() + " " + one + " ");
             } else {
                 rm.addText("\n" + Jobs.getLanguage().getMessage("command.help.output.cmdInfoFormat", "[command]", getUsage(one), "[description]", Jobs.getLanguage().getMessage("command." + one
                     + ".help.info")));
@@ -186,7 +327,7 @@ public class JobsCommands implements CommandExecutor {
         }
         rm.show(sender);
 
-        pi.autoPagination(sender, LABEL + " ?");
+        pi.autoPagination(sender, getMainLabel() + " ?");
         return true;
     }
 
@@ -338,9 +479,9 @@ public class JobsCommands implements CommandExecutor {
             String pName = player.getName();
 
             if (sender.getName().equalsIgnoreCase(pName))
-                pi.autoPagination(sender, LABEL + " " + info.class.getSimpleName() + " " + job.getName() + t);
+                pi.autoPagination(sender, getMainLabel() + " " + info.class.getSimpleName() + " " + job.getName() + t);
             else
-                pi.autoPagination(sender, LABEL + " " + playerinfo.class.getSimpleName() + " " + pName + " " + job.getName() + t);
+                pi.autoPagination(sender, getMainLabel() + " " + playerinfo.class.getSimpleName() + " " + pName + " " + job.getName() + t);
         }
     }
 

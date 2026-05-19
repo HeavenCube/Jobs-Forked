@@ -111,7 +111,6 @@ import com.gamingmesh.jobs.listeners.PistonProtectionListener;
 import com.gamingmesh.jobs.listeners.PlayerSignEdit1_20Listeners;
 import com.gamingmesh.jobs.selection.SelectionManager;
 import com.gamingmesh.jobs.stuff.Loging;
-import com.gamingmesh.jobs.stuff.TabComplete;
 import com.gamingmesh.jobs.stuff.ToggleBarHandling;
 import com.gamingmesh.jobs.stuff.Util;
 import com.gamingmesh.jobs.stuff.VersionChecker;
@@ -123,7 +122,6 @@ import com.gamingmesh.jobs.tasks.DatabaseSaveThread;
 
 import net.Zrips.CMILib.Items.CMIMaterial;
 import net.Zrips.CMILib.Locale.LC;
-import net.Zrips.CMILib.Logs.CMIDebug;
 import net.Zrips.CMILib.Messages.CMIMessages;
 import net.Zrips.CMILib.RawMessages.RawMessage;
 import net.Zrips.CMILib.Version.Version;
@@ -797,11 +795,6 @@ public final class Jobs extends JavaPlugin {
 
 			bbManager = new BossBarManager(this);
 
-			Optional.ofNullable(getCommand("jobs")).ifPresent(j -> {
-				j.setExecutor(getCommandManager());
-				j.setTabCompleter(new TabComplete());
-			});
-
 			startup();
 
 			if (status.equals(LoadStatus.MYSQLFailure) || status.equals(LoadStatus.SQLITEFailure)) {
@@ -811,6 +804,8 @@ public final class Jobs extends JavaPlugin {
 				this.setEnabled(false);
 				return;
 			}
+
+			getCommandManager().registerMainCommand();
 
 			if (getGCManager().SignsEnabled) {
 				new YmlMaker(getFolder(), "Signs.yml").saveDefaultConfig();
@@ -916,6 +911,9 @@ public final class Jobs extends JavaPlugin {
 		getGCManager().reload();
 		getLanguage().reload();
 		getConfigManager().reload();
+		if (!startup) {
+			getCommandManager().registerMainCommand();
+		}
 
 		hasLimitedItems = Jobs.getJobs().stream().anyMatch(job -> !job.getLimitedItems().isEmpty());
 

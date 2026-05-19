@@ -31,6 +31,7 @@ import java.util.regex.Pattern;
 import org.bukkit.Color;
 import org.bukkit.FireworkEffect;
 import org.bukkit.World;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -49,14 +50,11 @@ import net.Zrips.CMILib.Container.CMINumber;
 import net.Zrips.CMILib.Enchants.CMIEnchantment;
 import net.Zrips.CMILib.Equations.Parser;
 import net.Zrips.CMILib.FileHandler.ConfigReader;
-import net.Zrips.CMILib.Items.CMIAsyncHead;
 import net.Zrips.CMILib.Items.CMIItemStack;
 import net.Zrips.CMILib.Items.CMIMaterial;
-import net.Zrips.CMILib.Logs.CMIDebug;
 import net.Zrips.CMILib.Messages.CMIMessages;
 import net.Zrips.CMILib.Sounds.CMISound;
 import net.Zrips.CMILib.Version.Version;
-import net.Zrips.CMILib.Version.Schedulers.CMIScheduler;
 
 public class GeneralConfigManager {
 
@@ -70,6 +68,10 @@ public class GeneralConfigManager {
 	private final Map<CurrencyType, CurrencyLimit> currencyLimitUse = new HashMap<>();
 	private final Map<CurrencyType, Double> generalMulti = new HashMap<>();
 	private final Map<String, List<String>> commandArgs = new HashMap<>();
+	private String mainCommandLabel = "jobs";
+	private String mainCommandNamespace = "jobs";
+	private List<String> mainCommandAliases = new ArrayList<>();
+	private final Map<String, String> subCommandAliases = new HashMap<>();
 
 	protected Locale locale;
 	private ConfigReader c;
@@ -132,6 +134,29 @@ public class GeneralConfigManager {
 
 	public Map<String, List<String>> getCommandArgs() {
 		return commandArgs;
+	}
+
+	public String getMainCommandLabel() {
+		return mainCommandLabel;
+	}
+
+	public String getMainCommandNamespace() {
+		return mainCommandNamespace;
+	}
+
+	public List<String> getMainCommandAliases() {
+		return mainCommandAliases;
+	}
+
+	public String resolveSubCommandAlias(String input) {
+		String normalized = normalizeAlias(input);
+		if (normalized == null)
+			return input == null ? null : input.toLowerCase(Locale.ROOT);
+		return subCommandAliases.getOrDefault(normalized, normalized);
+	}
+
+	public Map<String, String> getSubCommandAliases() {
+		return subCommandAliases;
 	}
 
 	public CurrencyLimit getLimit(CurrencyType type) {
@@ -1113,6 +1138,60 @@ public class GeneralConfigManager {
 				"Browse - will open jobs browse GUI where player can check existing jobs and their actions",
 				"Last option is to define command you want to perform, use [playerName] variable to replace it with players name who performed it. Multiple commands can be provided too. Commands will be performed from console.");
 
+		c.addComment("Commands.Main.Label", "Primary label for Jobs command", "Set to a different value if you want to free up /jobs", "Example: jobsreborn");
+		mainCommandLabel = normalizeCommandLabel(c.get("Commands.Main.Label", "jobs"), "jobs");
+
+		c.addComment("Commands.Main.Aliases", "Optional aliases for the main Jobs command", "Example: [jr, job]", "Leave empty to disable aliases");
+		List<String> rawMainAliases = new ArrayList<>();
+		if (c.getC().isList("Commands.Main.Aliases"))
+			rawMainAliases.addAll(c.get("Commands.Main.Aliases", new ArrayList<String>()));
+		else if (c.getC().isString("Commands.Main.Aliases")) {
+			String singleAlias = c.getC().getString("Commands.Main.Aliases");
+			if (singleAlias != null)
+				rawMainAliases.add(singleAlias);
+		}
+		mainCommandAliases = normalizeCommandAliases(rawMainAliases, mainCommandLabel);
+
+		c.addComment("Commands.Main.Namespace", "Namespace used for the plugin command (namespace:command)", "Example: jobsreborn", "Do not include '/' or ':'");
+		mainCommandNamespace = normalizeNamespace(c.get("Commands.Main.Namespace", "jobs"), "jobs");
+
+		c.addComment("Commands.Subcommands.Aliases", "Map of subcommand aliases", "Example:", "  browse: [list, gui]", "  info: [details, i]");
+		subCommandAliases.clear();
+		ConfigurationSection aliasSection = c.getC().getConfigurationSection("Commands.Subcommands.Aliases");
+		if (aliasSection != null) {
+			Set<String> commandKeys = aliasSection.getKeys(false);
+			for (String commandKey : commandKeys) {
+				String canonical = normalizeAlias(commandKey);
+				if (canonical == null)
+					continue;
+				List<String> aliasValues = new ArrayList<>();
+				if (aliasSection.isList(commandKey))
+					aliasValues.addAll(aliasSection.getStringList(commandKey));
+				else if (aliasSection.isString(commandKey)) {
+					String singleValue = aliasSection.getString(commandKey);
+					if (singleValue != null)
+						aliasValues.add(singleValue);
+				}
+				for (String alias : aliasValues) {
+					String normalizedAlias = normalizeAlias(alias);
+					if (normalizedAlias == null)
+						continue;
+					if (normalizedAlias.equals(canonical))
+						continue;
+					if (commandKeys.contains(normalizedAlias)) {
+						Jobs.getPluginLogger().warning("Command alias '" + normalizedAlias + "' conflicts with command key '" + canonical + "'. Skipping.");
+						continue;
+					}
+					String existing = subCommandAliases.get(normalizedAlias);
+					if (existing != null && !existing.equals(canonical)) {
+						Jobs.getPluginLogger().warning("Command alias '" + normalizedAlias + "' already mapped to '" + existing + "', skipping duplicate for '" + canonical + "'.");
+						continue;
+					}
+					subCommandAliases.put(normalizedAlias, canonical);
+				}
+			}
+		}
+
 		helpPageBehavior.clear();
 		if (c.getC().isList("Commands.Jobs")) {
 			helpPageBehavior.addAll(c.get("Commands.Jobs", Arrays.asList("Default")));
@@ -1160,6 +1239,69 @@ public class GeneralConfigManager {
 		blockOwnershipDisabled = c.get("BlockOwnership.Disabled", false);
 
 		c.save();
+	}
+
+	private static String normalizeCommandLabel(String label, String fallback) {
+		if (label == null)
+			return fallback;
+		String normalized = label.trim().toLowerCase(Locale.ROOT);
+		if (normalized.startsWith("/"))
+			normalized = normalized.substring(1);
+		if (normalized.isEmpty())
+			return fallback;
+		int colonIndex = normalized.indexOf(':');
+		if (colonIndex >= 0 && colonIndex < normalized.length() - 1)
+			normalized = normalized.substring(colonIndex + 1);
+		else if (colonIndex == normalized.length() - 1)
+			normalized = normalized.substring(0, colonIndex);
+		normalized = normalized.replace(" ", "");
+		return normalized.isEmpty() ? fallback : normalized;
+	}
+
+	private static String normalizeNamespace(String namespace, String fallback) {
+		if (namespace == null)
+			return fallback;
+		String normalized = namespace.trim().toLowerCase(Locale.ROOT);
+		if (normalized.startsWith("/"))
+			normalized = normalized.substring(1);
+		if (normalized.endsWith(":"))
+			normalized = normalized.substring(0, normalized.length() - 1);
+		int colonIndex = normalized.indexOf(':');
+		if (colonIndex > 0)
+			normalized = normalized.substring(0, colonIndex);
+		normalized = normalized.replace(" ", "");
+		return normalized.isEmpty() ? fallback : normalized;
+	}
+
+	private static String normalizeAlias(String alias) {
+		if (alias == null)
+			return null;
+		String normalized = alias.trim().toLowerCase(Locale.ROOT);
+		if (normalized.startsWith("/"))
+			normalized = normalized.substring(1);
+		if (normalized.isEmpty())
+			return null;
+		int colonIndex = normalized.indexOf(':');
+		if (colonIndex >= 0 && colonIndex < normalized.length() - 1)
+			normalized = normalized.substring(colonIndex + 1);
+		else if (colonIndex == normalized.length() - 1)
+			normalized = normalized.substring(0, colonIndex);
+		normalized = normalized.replace(" ", "");
+		return normalized.isEmpty() ? null : normalized;
+	}
+
+	private static List<String> normalizeCommandAliases(List<String> aliases, String mainLabel) {
+		List<String> normalizedAliases = new ArrayList<>();
+		if (aliases == null)
+			return normalizedAliases;
+		for (String alias : aliases) {
+			String normalized = normalizeAlias(alias);
+			if (normalized == null || normalized.equals(mainLabel))
+				continue;
+			if (!normalizedAliases.contains(normalized))
+				normalizedAliases.add(normalized);
+		}
+		return normalizedAliases;
 	}
 
 	public String getSelectionTool() {
