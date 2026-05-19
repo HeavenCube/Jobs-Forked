@@ -77,6 +77,7 @@ import com.gamingmesh.jobs.Signs.SignUtil;
 import com.gamingmesh.jobs.Signs.jobsSign;
 import com.gamingmesh.jobs.api.JobsAreaSelectionEvent;
 import com.gamingmesh.jobs.api.JobsChunkChangeEvent;
+import com.gamingmesh.jobs.commands.JobsCommands;
 import com.gamingmesh.jobs.container.Job;
 import com.gamingmesh.jobs.container.JobLimitedItems;
 import com.gamingmesh.jobs.container.JobProgression;
@@ -260,7 +261,7 @@ public class JobsListener implements Listener {
 		// for the other plugins which could check this event after wards
 		event.setCancelled(true);
 
-		player.performCommand("jobs " + command);
+		player.performCommand(JobsCommands.getMainLabel() + " " + command);
 	}
 
 	public static enum SignSide {

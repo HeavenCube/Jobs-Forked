@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 
 import com.gamingmesh.jobs.Jobs;
 import com.gamingmesh.jobs.commands.Cmd;
+import com.gamingmesh.jobs.commands.JobsCommands;
 import com.gamingmesh.jobs.container.Job;
 import com.gamingmesh.jobs.i18n.Language;
 
@@ -21,6 +22,7 @@ public class browse implements Cmd {
     @Override
     public Boolean perform(Jobs plugin, CommandSender sender, final String[] args) {
         boolean senderIsPlayer = sender instanceof Player;
+        String mainLabel = JobsCommands.getMainLabel();
 
         if (Jobs.getGCManager().BrowseUseNewLook) {
             if (Jobs.getJobs().isEmpty()) {
@@ -113,11 +115,11 @@ public class browse implements Cmd {
                         hoverMsg += Jobs.getLanguage().getMessage("command.browse.output.click");
 
                         rm.addText(Jobs.getLanguage().getMessage("command.browse.output.list", "[place]", pi.getPositionForOutput(),
-                            one)).addHover(hoverMsg).addCommand("jobs browse -j:" + one.getName());
+                            one)).addHover(hoverMsg).addCommand(mainLabel + " browse -j:" + one.getName());
 
                         rm.show(sender);
                     }
-                    pi.autoPagination(sender, "jobs browse", "-p:");
+                    pi.autoPagination(sender, mainLabel + " browse", "-p:");
                 } else {
 
                     Language.sendMessage(sender, "command.browse.output.jobHeader", j);
@@ -143,12 +145,12 @@ public class browse implements Cmd {
 
                     RawMessage rm = new RawMessage();
                     rm.addText(Jobs.getLanguage().getMessage("command.browse.output.detailed"))
-                        .addHover(Jobs.getLanguage().getMessage("command.browse.output.detailed")).addCommand("jobs info " + j.getName());
+                        .addHover(Jobs.getLanguage().getMessage("command.browse.output.detailed")).addCommand(mainLabel + " info " + j.getName());
                     rm.show(sender);
                     rm.clear();
                     rm.addText(Jobs.getLanguage().getMessage("command.browse.output.chooseJob"))
                         .addHover(Jobs.getLanguage().getMessage("command.browse.output.chooseJobHover"))
-                        .addCommand("jobs join " + j.getName() + " -needConfirmation").show(sender);
+                        .addCommand(mainLabel + " join " + j.getName() + " -needConfirmation").show(sender);
                 }
             } else {
                 if (j == null) {

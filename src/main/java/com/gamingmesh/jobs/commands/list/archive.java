@@ -7,6 +7,7 @@ import org.bukkit.entity.Player;
 
 import com.gamingmesh.jobs.Jobs;
 import com.gamingmesh.jobs.commands.Cmd;
+import com.gamingmesh.jobs.commands.JobsCommands;
 import com.gamingmesh.jobs.container.JobProgression;
 import com.gamingmesh.jobs.container.JobsPlayer;
 import com.gamingmesh.jobs.i18n.Language;
@@ -42,12 +43,13 @@ public class archive implements Cmd {
         }
 
         Language.sendMessage(sender, "general.info.toplineseparator", "%playername%", jPlayer.getName(), "%playerdisplayname%", jPlayer.getDisplayName());
+        String mainLabel = JobsCommands.getMainLabel();
         for (JobProgression jobInfo : allJobs) {
             RawMessage rm = new RawMessage();
             if (jobInfo.canRejoin())
                 rm.addText(CMIChatColor.GREEN + "+" + Jobs.getCommandManager().jobStatsMessageArchive(jPlayer, jobInfo))
                     .addHover(Jobs.getLanguage().getMessage("command.join.rejoin"))
-                    .addCommand("jobs join " + jobInfo.getJob().getName());
+                    .addCommand(mainLabel + " join " + jobInfo.getJob().getName());
             else
                 rm.addText(CMIChatColor.RED + "-" + Jobs.getCommandManager().jobStatsMessageArchive(jPlayer, jobInfo))
                     .addHover(Jobs.getLanguage().getMessage("command.join.error.rejoin", "[time]", jobInfo.getRejoinTimeMessage()));

@@ -9,6 +9,7 @@ import org.bukkit.inventory.ItemStack;
 
 import com.gamingmesh.jobs.Jobs;
 import com.gamingmesh.jobs.commands.Cmd;
+import com.gamingmesh.jobs.commands.JobsCommands;
 import com.gamingmesh.jobs.config.ConfigManager.KeyValues;
 import com.gamingmesh.jobs.container.ActionType;
 import com.gamingmesh.jobs.container.CurrencyType;
@@ -40,6 +41,8 @@ public class editjobs implements Cmd {
         if (args.length == 0)
             args = new String[] { "list" };
 
+        String editjobsPrefix = JobsCommands.getMainLabel() + " editjobs ";
+
         switch (args[0]) {
         case "list":
             if (args.length == 1) {
@@ -49,7 +52,7 @@ public class editjobs implements Cmd {
                     RawMessage rm = new RawMessage();
                     rm.addText(Jobs.getLanguage().getMessage("command.editjobs.help.list.jobs", one))
                         .addHover(one.getName())
-                        .addCommand("jobs editjobs list " + one.getName());
+                        .addCommand(editjobsPrefix + "list " + one.getName());
                     rm.show(sender);
                 }
 
@@ -72,7 +75,7 @@ public class editjobs implements Cmd {
                     RawMessage rm = new RawMessage();
                     rm.addText(Jobs.getLanguage().getMessage("command.editjobs.help.list.actions", "%actionname%", oneI.getName()))
                         .addHover(oneI.getName())
-                        .addCommand("jobs editjobs list " + job.getName() + " " + oneI.getName() + " 1");
+                        .addCommand(editjobsPrefix + "list " + job.getName() + " " + oneI.getName() + " 1");
                     rm.show(sender);
                 }
 
@@ -111,19 +114,19 @@ public class editjobs implements Cmd {
                         String materialName = one.getRealisticName();
 
                         RawMessage rm = new RawMessage();
-                        rm.add(Jobs.getLanguage().getMessage("command.editjobs.help.list.material", "%materialname%", materialName), one.getName(), "jobs editjobs list " + job.getName() + " " + actionT
+                        rm.add(Jobs.getLanguage().getMessage("command.editjobs.help.list.material", "%materialname%", materialName), one.getName(), editjobsPrefix + "list " + job.getName() + " " + actionT
                             .getName() + " " + one.getName());
-                        rm.add(Jobs.getLanguage().getMessage("command.editjobs.help.list.materialRemove"), "&cRemove", "jobs editjobs remove " + job.getName() + " " + actionT.getName() + " " + one
+                        rm.add(Jobs.getLanguage().getMessage("command.editjobs.help.list.materialRemove"), "&cRemove", editjobsPrefix + "remove " + job.getName() + " " + actionT.getName() + " " + one
                             .getName());
                         rm.show(sender);
                     }
 
                     RawMessage rm = new RawMessage();
-                    rm.add(Jobs.getLanguage().getMessage("command.editjobs.help.list.materialAdd"), "&eAdd new", "jobs editjobs add " + job.getName() + " " + actionT.getName());
+                    rm.add(Jobs.getLanguage().getMessage("command.editjobs.help.list.materialAdd"), "&eAdd new", editjobsPrefix + "add " + job.getName() + " " + actionT.getName());
                     rm.show(sender);
                     Util.getJobsEditorMap().remove(player.getUniqueId());
 
-                    pi.autoPagination(sender, "jobs editjobs list " + job.getName() + " " + actionT.getName());
+                    pi.autoPagination(sender, editjobsPrefix + "list " + job.getName() + " " + actionT.getName());
                     return true;
                 }
 
@@ -153,18 +156,18 @@ public class editjobs implements Cmd {
                 showPath(player, job, actionT, jInfo);
 
                 RawMessage rm = new RawMessage();
-                rm.add(Jobs.getLanguage().getMessage("command.editjobs.help.list.money", "%amount%", jInfo.getBaseIncome()), "&e" + jInfo.getBaseIncome(), "jobs editjobs modify " + job.getName() + " "
+                rm.add(Jobs.getLanguage().getMessage("command.editjobs.help.list.money", "%amount%", jInfo.getBaseIncome()), "&e" + jInfo.getBaseIncome(), editjobsPrefix + "modify " + job.getName() + " "
                     + actionT.getName() + " " + jInfo.getName() + " money ");
                 rm.show(sender);
 
                 rm = new RawMessage();
-                rm.add(Jobs.getLanguage().getMessage("command.editjobs.help.list.points", "%amount%", jInfo.getBasePoints()), "&e" + jInfo.getBasePoints(), "jobs editjobs modify " + job.getName() + " "
+                rm.add(Jobs.getLanguage().getMessage("command.editjobs.help.list.points", "%amount%", jInfo.getBasePoints()), "&e" + jInfo.getBasePoints(), editjobsPrefix + "modify " + job.getName() + " "
                     + actionT.getName() + " " + jInfo.getName()
                     + " points ");
                 rm.show(sender);
 
                 rm = new RawMessage();
-                rm.add(Jobs.getLanguage().getMessage("command.editjobs.help.list.exp", "%amount%", jInfo.getBaseXp()), "&e" + jInfo.getBaseXp(), "jobs editjobs modify " + job.getName() + " " + actionT
+                rm.add(Jobs.getLanguage().getMessage("command.editjobs.help.list.exp", "%amount%", jInfo.getBaseXp()), "&e" + jInfo.getBaseXp(), editjobsPrefix + "modify " + job.getName() + " " + actionT
                     .getName() + " " + jInfo.getName() + " exp ");
                 rm.show(sender);
                 Util.getJobsEditorMap().remove(player.getUniqueId());
@@ -200,7 +203,7 @@ public class editjobs implements Cmd {
                 if (type == null)
                     return false;
 
-                Util.getJobsEditorMap().put(player.getUniqueId(), "jobs editjobs modify " + job.getName() + " " + actionT.getName() + " " + jInfo.getName() + " " + type.getName() + " ");
+                Util.getJobsEditorMap().put(player.getUniqueId(), editjobsPrefix + "modify " + job.getName() + " " + actionT.getName() + " " + jInfo.getName() + " " + type.getName() + " ");
                 sender.sendMessage(Jobs.getLanguage().getMessage("command.editjobs.help.modify.newValue"));
                 return true;
             }
@@ -259,7 +262,7 @@ public class editjobs implements Cmd {
                 }
 
                 Jobs.getConfigManager().changeJobsSettings(args[1], jInfo.getConfigPath() + "/" + sType, value);
-                player.performCommand("jobs editjobs list " + job.getName() + " " + actionT.getName() + " " + jInfo.getName());
+                player.performCommand(editjobsPrefix + "list " + job.getName() + " " + actionT.getName() + " " + jInfo.getName());
                 Util.getJobsEditorMap().remove(player.getUniqueId());
                 return true;
             }
@@ -295,7 +298,7 @@ public class editjobs implements Cmd {
 
                 action.remove(jInfo);
                 Jobs.getConfigManager().changeJobsSettings(args[1], jInfo.getConfigPath(), null);
-                player.performCommand("jobs editjobs list " + job.getName() + " " + actionT.getName() + " 1");
+                player.performCommand(editjobsPrefix + "list " + job.getName() + " " + actionT.getName() + " 1");
                 Util.getJobsEditorMap().remove(player.getUniqueId());
                 return true;
             }
@@ -318,14 +321,14 @@ public class editjobs implements Cmd {
 
                 RawMessage rm = new RawMessage();
                 rm.add(Jobs.getLanguage().getMessage("command.editjobs.help.modify.enter"));
-                rm.add(Jobs.getLanguage().getMessage("command.editjobs.help.modify.hand"), Jobs.getLanguage().getMessage("command.editjobs.help.modify.handHover"), "jobs editjobs add " + job.getName()
+                rm.add(Jobs.getLanguage().getMessage("command.editjobs.help.modify.hand"), Jobs.getLanguage().getMessage("command.editjobs.help.modify.handHover"), editjobsPrefix + "add " + job.getName()
                     + " " + actionT.getName() + " hand");
                 rm.add(Jobs.getLanguage().getMessage("command.editjobs.help.modify.or"));
-                rm.add(Jobs.getLanguage().getMessage("command.editjobs.help.modify.look"), Jobs.getLanguage().getMessage("command.editjobs.help.modify.lookHover"), "jobs editjobs add " + job.getName()
+                rm.add(Jobs.getLanguage().getMessage("command.editjobs.help.modify.look"), Jobs.getLanguage().getMessage("command.editjobs.help.modify.lookHover"), editjobsPrefix + "add " + job.getName()
                     + " " + actionT.getName() + " looking");
                 rm.show(sender);
 
-                Util.getJobsEditorMap().put(player.getUniqueId(), "jobs editjobs add " + job.getName() + " " + actionT.getName() + " ");
+                Util.getJobsEditorMap().put(player.getUniqueId(), editjobsPrefix + "add " + job.getName() + " " + actionT.getName() + " ");
                 return true;
             }
 
@@ -382,13 +385,13 @@ public class editjobs implements Cmd {
 
                 for (JobInfo info : job.getJobInfo(actionT)) {
                     if (info.getName().equalsIgnoreCase(jInfo.getName())) {
-                        player.performCommand("jobs editjobs list " + job.getName() + " " + actionT.getName() + " " + jInfo.getName());
+                        player.performCommand(editjobsPrefix + "list " + job.getName() + " " + actionT.getName() + " " + jInfo.getName());
                         return true;
                     }
                 }
 
                 action.add(jInfo);
-                player.performCommand("jobs editjobs list " + job.getName() + " " + actionT.getName() + " " + jInfo.getName());
+                player.performCommand(editjobsPrefix + "list " + job.getName() + " " + actionT.getName() + " " + jInfo.getName());
 
                 Jobs.getConfigManager().changeJobsSettings(args[1], jInfo.getConfigPath() + "/income", 0);
                 Jobs.getConfigManager().changeJobsSettings(args[1], jInfo.getConfigPath() + "/points", 0);
@@ -407,14 +410,15 @@ public class editjobs implements Cmd {
     }
 
     private static void showPath(Player player, Job job, ActionType action, JobInfo jInfo) {
+        String editjobsPrefix = JobsCommands.getMainLabel() + " editjobs ";
         RawMessage rm = new RawMessage();
         rm.addText(Jobs.getLanguage().getMessage("command.editjobs.help.list.job")).addHover("&eJob list")
-            .addCommand("jobs editjobs").show(player);
+            .addCommand(JobsCommands.getMainLabel() + " editjobs").show(player);
 
         if (job != null) {
             rm = new RawMessage();
             rm.addText(Jobs.getLanguage().getMessage("command.editjobs.help.list.jobs", job))
-                .addHover(job.getName()).addCommand("jobs editjobs list " + job.getName());
+                .addHover(job.getName()).addCommand(editjobsPrefix + "list " + job.getName());
             rm.show(player);
         }
 
@@ -422,7 +426,7 @@ public class editjobs implements Cmd {
             rm = new RawMessage();
 
             rm.addText(Jobs.getLanguage().getMessage("command.editjobs.help.list.actions", "%actionname%", action.getName()))
-                .addHover(action.getName()).addCommand("jobs editjobs list " + job.getName() + " " + action.getName() + " 1")
+                .addHover(action.getName()).addCommand(editjobsPrefix + "list " + job.getName() + " " + action.getName() + " 1")
                 .show(player);
         }
 
@@ -435,7 +439,7 @@ public class editjobs implements Cmd {
             materialName = CMIChatColor.translate(materialName);
 
             rm.addText(Jobs.getLanguage().getMessage("command.editjobs.help.list.material", "%materialname%", jInfo.getName()))
-                .addHover(jInfo.getName()).addCommand("jobs editjobs list " + job.getName() + " " + action.getName()
+                .addHover(jInfo.getName()).addCommand(editjobsPrefix + "list " + job.getName() + " " + action.getName()
                     + " " + materialName).show(player);
         }
     }

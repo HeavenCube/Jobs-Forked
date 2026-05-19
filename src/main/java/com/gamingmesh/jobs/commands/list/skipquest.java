@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 
 import com.gamingmesh.jobs.Jobs;
 import com.gamingmesh.jobs.commands.Cmd;
+import com.gamingmesh.jobs.commands.JobsCommands;
 import com.gamingmesh.jobs.container.Job;
 import com.gamingmesh.jobs.container.JobsPlayer;
 import com.gamingmesh.jobs.container.Quest;
@@ -128,7 +129,7 @@ public class skipquest implements Cmd {
         jPlayer.replaceQuest(old);
 
         if (player != null)
-            plugin.getServer().dispatchCommand(player, "jobs quests");
+            plugin.getServer().dispatchCommand(player, JobsCommands.getMainLabel() + " quests");
 
         if (amount > 0) {
             Language.sendMessage(sender, "command.skipquest.output.questSkipForCost", "%amount%", amount);

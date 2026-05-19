@@ -9,6 +9,7 @@ import org.bukkit.entity.Player;
 
 import com.gamingmesh.jobs.Jobs;
 import com.gamingmesh.jobs.commands.Cmd;
+import com.gamingmesh.jobs.commands.JobsCommands;
 import com.gamingmesh.jobs.container.JobProgression;
 import com.gamingmesh.jobs.container.JobsPlayer;
 import com.gamingmesh.jobs.container.Quest;
@@ -152,7 +153,7 @@ public class quests implements Cmd {
                         hover += "\n" + Jobs.getLanguage().getMessage("command.quests.output.skip");
                         hover += "\n" + Jobs.getLanguage().getMessage("command.quests.output.skips", "[skips]", (Jobs.getGCManager().getDailyQuestsSkips() - jPlayer.getSkippedQuests()));
                     }
-                    rm.addText(msg).addHover(hover).addCommand("jobs skipquest " + jobProg.getJob().getName() + " " + quest.getConfigName() + " " + jPlayer.getName());
+                    rm.addText(msg).addHover(hover).addCommand(JobsCommands.getMainLabel() + " skipquest " + jobProg.getJob().getName() + " " + quest.getConfigName() + " " + jPlayer.getName());
                 } else
                     rm.addText(msg).addHover(hover);
 
@@ -232,7 +233,7 @@ public class quests implements Cmd {
                     CMIGuiButton button = new CMIGuiButton(jobProg.getJob().getGuiItem()) {
                         @Override
                         public void click(GUIClickType type) {
-                            player.performCommand("jobs skipquest " + jobProg.getJob().getName() + " " + quest.getConfigName() + " " + jPlayer.getName());
+                            player.performCommand(JobsCommands.getMainLabel() + " skipquest " + jobProg.getJob().getName() + " " + quest.getConfigName() + " " + jPlayer.getName());
                         }
                     };
 

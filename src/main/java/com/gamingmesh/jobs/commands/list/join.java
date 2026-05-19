@@ -5,6 +5,7 @@ import org.bukkit.entity.Player;
 
 import com.gamingmesh.jobs.Jobs;
 import com.gamingmesh.jobs.commands.Cmd;
+import com.gamingmesh.jobs.commands.JobsCommands;
 import com.gamingmesh.jobs.container.Job;
 import com.gamingmesh.jobs.container.JobProgression;
 import com.gamingmesh.jobs.container.JobsPlayer;
@@ -28,7 +29,7 @@ public class join implements Cmd {
         }
 
         if (args.length == 0) {
-            plugin.getServer().dispatchCommand(sender, "jobs browse");
+            plugin.getServer().dispatchCommand(sender, JobsCommands.getMainLabel() + " browse");
             return true;
         }
 
@@ -75,7 +76,7 @@ public class join implements Cmd {
         if (args.length == 2 && args[1].equalsIgnoreCase("-needConfirmation")) {
             new RawMessage().addText(Jobs.getLanguage().getMessage("command.join.confirm", job))
                 .addHover(Jobs.getLanguage().getMessage("command.join.confirm", job))
-                .addCommand("jobs join " + job.getName()).show(pSender);
+                .addCommand(JobsCommands.getMainLabel() + " join " + job.getName()).show(pSender);
             return true;
         }
 
