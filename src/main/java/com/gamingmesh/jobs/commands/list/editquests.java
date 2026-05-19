@@ -131,7 +131,7 @@ public class editquests implements Cmd {
             CMOE.addline(CEO);
         }
         CMOE.print();
-        pi.autoPagination(sender, JobsCommands.LABEL + " " + editquests.class.getSimpleName());
+        pi.autoPagination(sender, JobsCommands.getMainLabel() + " " + editquests.class.getSimpleName());
 
     }
 

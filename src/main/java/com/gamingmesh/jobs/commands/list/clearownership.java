@@ -70,7 +70,7 @@ public class clearownership implements Cmd {
         Language.sendMessage(sender, "command.clearownership.output.cleared", "[furnaces]", amounts.getOrDefault(BlockTypes.FURNACE, 0), "[brewing]", amounts.getOrDefault(
             BlockTypes.BREWING_STAND, 0), "[smoker]", amounts.getOrDefault(BlockTypes.SMOKER, 0), "[blast]", amounts.getOrDefault(BlockTypes.BLAST_FURNACE, 0));
 
-        Bukkit.dispatchCommand(sender, JobsCommands.LABEL + " " + ownedblocks.class.getSimpleName() + (sender.getName().equals(jPlayer.getName()) ? "" : jPlayer.getName()));
+        Bukkit.dispatchCommand(sender, JobsCommands.getMainLabel() + " " + ownedblocks.class.getSimpleName() + (sender.getName().equals(jPlayer.getName()) ? "" : jPlayer.getName()));
 
         return true;
     }

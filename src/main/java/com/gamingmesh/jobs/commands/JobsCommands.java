@@ -120,7 +120,7 @@ public class JobsCommands implements CommandExecutor {
         return commands;
     }
 
-    private static String getMainLabel() {
+    public static String getMainLabel() {
         String label = Jobs.getGCManager().getMainCommandLabel();
         return label == null || label.isEmpty() ? "jobs" : label;
     }

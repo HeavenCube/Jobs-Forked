@@ -75,7 +75,7 @@ public class ownedblocks implements Cmd {
 						material.getName(), "[location]", LC.Location_Full.getLocale((Location) loc)));
 				rm.addHover(Jobs.getLanguage().getMessage("command.ownedblocks.output.listHover", "[location]",
 						LC.Location_Full.getLocale((Location) loc)));
-				rm.addCommand(JobsCommands.LABEL + " " + clearownership.class.getSimpleName() + " " + jPlayer.getName()
+				rm.addCommand(JobsCommands.getMainLabel() + " " + clearownership.class.getSimpleName() + " " + jPlayer.getName()
 						+ " " + record.getKey());
 				if (record.getValue().isDisabled()) {
 					rm.addText(Jobs.getLanguage().getMessage("command.ownedblocks.output.disabled"));
